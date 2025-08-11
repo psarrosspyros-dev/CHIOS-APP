@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Δήμος Χίου - Ενιαία Ψηφιακή Πύλη</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        .nav-link { transition: all 0.2s ease-in-out; }
+        .nav-link.active { color: #00A6FB; border-bottom-color: #00A6FB; }
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #00A6FB; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .prose h2 { font-size: 1.25rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .prose h3 { font-size: 1.1rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.25rem; }
+        .prose ul { list-style-type: disc; margin-left: 1.5rem; }
+        .prose li { margin-bottom: 0.25rem; }
+        #map { height: 300px; border-radius: 0.5rem; border: 1px solid #ddd; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto max-w-4xl p-4">
+        
+        <header class="text-center my-8">
+            <h1 class="text-4xl md:text-5xl font-black text-[#006494]">Ψηφιακή Πύλη Δήμου Χίου</h1>
+            <p class="text-lg text-gray-600 mt-2">Η πόλη σας, στην παλάμη του χεριού σας.</p>
+        </header>
+
+        <nav class="bg-white rounded-lg shadow-md mb-8 sticky top-4 z-10">
+            <div class="flex justify-around border-b">
+                <button data-view="home" class="nav-link active w-full p-4 font-bold border-b-4">🏠 Κεντρική</button>
+                <button data-view="alerts" class="nav-link w-full p-4 font-bold border-b-4 border-transparent">🔔 MyCity-Alert</button>
+                <button data-view="fix" class="nav-link w-full p-4 font-bold border-b-4 border-transparent">🛠️ MyCity-Fix</button>
+                <button data-view="plan" class="nav-link w-full p-4 font-bold border-b-4 border-transparent">✨ MyCity-Plan</button>
+            </div>
+        </nav>
+
+        <main>
+            <!-- Home View -->
+            <div id="home" class="view active">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-[#006494] mb-4">Καλώς ήρθατε!</h2>
+                    <p class="text-gray-700">Αυτή η εφαρμογή είναι η ενιαία σας πύλη για όλες τις υπηρεσίες του Δήμου Χίου. Από την άμεση ενημέρωση για έκτακτες ανάγκες μέχρι την αναφορά προβλημάτων της καθημερινότητας, στόχος μας είναι να κάνουμε την πόλη μας πιο ασφαλή, λειτουργική και συμμετοχική. Επιλέξτε μια από τις παραπάνω ενότητες για να ξεκινήσετε.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg text-[#0582CA]">MyCity-Events</h3>
+                        <p class="text-sm text-gray-600 mt-1 mb-3">Πολιτιστική Ατζέντα</p>
+                        <ul>
+                            <li class="border-b py-2">Φεστιβάλ Μαστίχας - Συναυλία <span class="text-xs bg-blue-100 text-blue-800 p-1 rounded">Σήμερα</span></li>
+                            <li class="border-b py-2">Έκθεση Ζωγραφικής στο Δημαρχείο</li>
+                            <li class="py-2">Αγώνας Δρόμου "Chios Run"</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg text-[#0582CA]">MyCity-Engage</h3>
+                        <p class="text-sm text-gray-600 mt-1 mb-3">Συμμετοχική Δημοκρατία</p>
+                        <p class="mb-2">📣 **Σε διαβούλευση:** Ανάπλαση παραλιακού μετώπου. <a href="#" class="text-blue-600 hover:underline">Δείτε περισσότερα</a>.</p>
+                        <p>🤝 **Εθελοντισμός:** Καθαρισμός παραλίας Κώμης. <a href="#" class="text-blue-600 hover:underline">Δηλώστε συμμετοχή</a>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts View -->
+            <div id="alerts" class="view">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold text-[#006494] mb-4">MyCity-Alert: Ευφυείς Ειδοποιήσεις</h2>
+                    <p class="text-gray-700 mb-6">Εδώ μπορείτε να δείτε πώς η τεχνητή νοημοσύνη μετατρέπει τεχνικά δεδομένα σε σαφείς οδηγίες για την ασφάλειά σας.</p>
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6">
+                        <h4 class="font-bold">Δυναμική Δημιουργία Ειδοποίησης</h4>
+                        <div class="mt-4">
+                            <p class="font-semibold text-gray-500 text-sm">Αρχικά Τεχνικά Δεδομένα:</p>
+                            <p id="rawData" class="text-sm bg-gray-200 p-2 rounded font-mono">EVENT:FIRE; LOC:40.12,26.05; WIND:5BF; DIR:NE; RISK:HIGH; ACTION:PREP_EVAC</p>
+                        </div>
+                        <div class="mt-4">
+                            <p class="font-semibold text-gray-500 text-sm">Ειδοποίηση Ενισχυμένη από AI:</p>
+                            <div id="geminiAlert" class="bg-yellow-100 border border-yellow-400 text-yellow-800 p-3 rounded min-h-[100px] flex items-center justify-center text-center">
+                                <span class="text-gray-500">Πατήστε το κουμπί για δημιουργία...</span>
+                            </div>
+                            <div class="flex items-center mt-2">
+                                <button id="generateAlertBtn" class="bg-[#00A6FB] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#0582CA] transition-colors flex items-center justify-center">
+                                    <span id="generateAlertBtnText">Δημιουργία</span>
+                                    <div id="generateAlertLoader" class="loader hidden ml-2"></div>
+                                </button>
+                                <button id="readAloudBtn" class="ml-4 p-2 rounded-full hover:bg-gray-200 disabled:opacity-50" title="Ηχητική Ανάγνωση" disabled>🔊</button>
+                            </div>
+                            <p id="tts-error" class="text-xs text-red-500 mt-2 hidden"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fix View -->
+            <div id="fix" class="view">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold text-[#006494] mb-4">MyCity-Fix: Αναφορά Προβλημάτων</h2>
+                    <p class="text-gray-700 mb-6">Εντοπίσατε ένα πρόβλημα; Ενημερώστε μας άμεσα για να το επιλύσουμε.</p>
+                    <form id="fixit-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Επιλέξτε τοποθεσία στον χάρτη</label>
+                            <div id="map" class="mt-1"></div>
+                            <input type="hidden" id="coordinates">
+                        </div>
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700">Περιγραφή Προβλήματος</label>
+                            <textarea id="description" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="π.χ. Μεγάλη λακκούβα επικίνδυνη για οχήματα..."></textarea>
+                        </div>
+                         <div>
+                            <label for="issue-type" class="block text-sm font-medium text-gray-700">Είδος Προβλήματος</label>
+                            <div class="flex items-center gap-2 mt-1">
+                                <select id="issue-type" class="block w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="">Επιλέξτε...</option>
+                                    <option>Λακκούβα στο οδόστρωμα</option>
+                                    <option>Καμένος λαμπτήρας</option>
+                                    <option>Απορρίμματα</option>
+                                    <option>Εγκαταλελειμμένο όχημα</option>
+                                    <option>Άλλο</option>
+                                </select>
+                                <button type="button" id="categorizeBtn" class="p-2 bg-gray-200 rounded-md hover:bg-gray-300" title="Αυτόματη Κατηγοριοποίηση με AI">🤖</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-[#00A6FB] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#0582CA] transition-colors">Υποβολή Αναφοράς</button>
+                    </form>
+                    <div id="form-success" class="hidden mt-4 text-center p-4 bg-green-100 text-green-800 rounded-lg">Η αναφορά σας καταχωρήθηκε!</div>
+                    <div id="fix-error" class="hidden mt-4 text-center p-4 bg-red-100 text-red-800 rounded-lg"></div>
+                </div>
+                <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-[#006494] mb-4">Οι Αναφορές μου</h3>
+                    <div id="my-reports" class="space-y-3">
+                        <div class="p-3 bg-gray-50 rounded-md border flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">Λακκούβα στο οδόστρωμα</p>
+                                <p class="text-xs text-gray-500">Οδός Αργέντη</p>
+                            </div>
+                            <span class="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">Ολοκληρώθηκε</span>
+                        </div>
+                         <div class="p-3 bg-gray-50 rounded-md border flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">Καμένος λαμπτήρας</p>
+                                <p class="text-xs text-gray-500">Πλατεία Βουνακίου</p>
+                            </div>
+                            <span class="text-sm font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Σε εξέλιξη</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan View -->
+            <div id="plan" class="view">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold text-[#006494] mb-4">MyCity-Plan: Προσωπικό Σχέδιο Ανάγκης</h2>
+                    <p class="text-gray-700 mb-6">Η ετοιμότητα ξεκινά από το σπίτι. Δημιουργήστε ένα εξατομικευμένο σχέδιο δράσης και μια λίστα ελέγχou για το σακίδιο έκτακτης ανάγκης.</p>
+                     <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg mb-6">
+                        <h4 class="font-bold mb-3">1. Δημιουργία Σχεδίου Δράσης</h4>
+                        <div class="space-y-3">
+                            <div><label for="area-type" class="block text-sm font-medium text-gray-700">Τύπος Περιοχής</label><select id="area-type" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"><option value="urban">Αστική</option><option value="rural">Αγροτική/Ορεινή</option><option value="coastal">Παράκτια</option></select></div>
+                            <div><label for="adults" class="block text-sm font-medium text-gray-700">Αριθμός Ενηλίκων</label><input type="number" id="adults" value="2" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                            <div><label for="children" class="block text-sm font-medium text-gray-700">Αριθμός Παιδιών</label><input type="number" id="children" value="1" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                            <div><label for="disabilities" class="block text-sm font-medium text-gray-700">Άτομα με κινητικές δυσκολίες;</label><select id="disabilities" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"><option value="no">Όχι</option><option value="yes">Ναι</option></select></div>
+                            <!-- FIX: Added disaster type selection -->
+                            <div><label for="disaster-type" class="block text-sm font-medium text-gray-700">Επιλογή Κινδύνου</label><select id="disaster-type" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"><option value="Σεισμός">Σεισμός</option><option value="Πυρκαγιά">Πυρκαγιά</option><option value="Πλημμύρα">Πλημμύρα</option></select></div>
+                        </div>
+                        <button id="generatePlanBtn" class="mt-4 w-full bg-[#F7B801] text-[#006494] font-bold py-2 px-4 rounded-lg hover:bg-amber-400 transition-colors flex items-center justify-center">
+                            <span id="generatePlanBtnText">Δημιουργία Σχεδίου Δράσης</span>
+                            <div id="generatePlanLoader" class="loader hidden ml-3"></div>
+                        </button>
+                    </div>
+                     <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                        <h4 class="font-bold mb-3">2. Λίστα Ελέγχου "Go-Bag"</h4>
+                        <p class="text-sm text-gray-600 mb-3">Πατήστε το κουμπί για να δημιουργήσει η AI μια εξατομικευμένη, διαδραστική λίστα ελέγχου για το σακίδιο έκτακτης ανάγκης της οικογένειάς σας.</p>
+                        <button id="generateChecklistBtn" class="w-full bg-[#00A6FB] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#0582CA] transition-colors flex items-center justify-center">
+                            <span id="generateChecklistBtnText">Δημιουργία Λίστας Ελέγχou</span>
+                            <div id="generateChecklistLoader" class="loader hidden ml-3"></div>
+                        </button>
+                    </div>
+                    <div id="plan-error" class="hidden mt-4 text-center p-4 bg-red-100 text-red-800 rounded-lg"></div>
+                </div>
+                 <div id="planResultCard" class="mt-8 bg-white p-6 rounded-lg shadow-md hidden">
+                    <h3 class="text-2xl font-bold text-[#006494] mb-4">Το Προσωπικό σας Σχέδιο Δράσης</h3>
+                    <div id="planResult" class="prose max-w-none text-gray-800"></div>
+                </div>
+                 <div id="checklistResultCard" class="mt-8 bg-white p-6 rounded-lg shadow-md hidden">
+                    <h3 class="text-2xl font-bold text-[#006494] mb-4">Λίστα Ελέγχου "Go-Bag"</h3>
+                    <div id="checklistResult" class="space-y-4"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigation Logic
+            const navLinks = document.querySelectorAll('.nav-link');
+            const views = document.querySelectorAll('.view');
+            let map;
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    const viewId = link.dataset.view;
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+                    views.forEach(view => {
+                        view.classList.remove('active');
+                        if (view.id === viewId) {
+                            view.classList.add('active');
+                        }
+                    });
+                    if (viewId === 'fix' && !map) {
+                        setTimeout(initMap, 0);
+                    }
+                });
+            });
+
+            // MyCity-Fix Form Logic
+            const fixitForm = document.getElementById('fixit-form');
+            const formSuccess = document.getElementById('form-success');
+            fixitForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                formSuccess.classList.remove('hidden');
+                fixitForm.reset();
+                setTimeout(() => { formSuccess.classList.add('hidden'); }, 5000);
+            });
+
+            // Gemini API Integration
+            const apiKey = "";
+            const apiUrlText = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrlTts = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            let currentAlertText = '';
+            let audioContext;
+
+            const exponentialBackoff = async (apiCall, maxRetries = 5) => {
+                let delay = 1000;
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await apiCall();
+                        if (response.ok) { return response.json(); }
+                    } catch (error) { /* Network or other errors */ }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+                throw new Error("API call failed after multiple retries.");
+            };
+            
+            // Map Initialization
+            function initMap() {
+                map = L.map('map').setView([38.3733, 26.1383], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+                let marker;
+                map.on('click', function(e) {
+                    if (marker) {
+                        map.removeLayer(marker);
+                    }
+                    marker = L.marker(e.latlng).addTo(map);
+                    document.getElementById('coordinates').value = `${e.latlng.lat}, ${e.latlng.lng}`;
+                });
+            }
+
+            // Alerts View Logic
+            const generateAlertBtn = document.getElementById('generateAlertBtn');
+            const generateAlertBtnText = document.getElementById('generateAlertBtnText');
+            const generateAlertLoader = document.getElementById('generateAlertLoader');
+            const geminiAlertDiv = document.getElementById('geminiAlert');
+            const readAloudBtn = document.getElementById('readAloudBtn');
+            const ttsError = document.getElementById('tts-error');
+
+            generateAlertBtn.addEventListener('click', async () => {
+                generateAlertBtn.disabled = true;
+                generateAlertLoader.classList.remove('hidden');
+                generateAlertBtnText.textContent = 'Δημιουργία...';
+                readAloudBtn.disabled = true;
+                const rawData = document.getElementById('rawData').textContent;
+                const prompt = `Act as a civil protection expert. Your task is to translate the following raw alert data into a clear, calm, and actionable message in Greek for the public. The message should be concise and easy to understand under pressure. Raw data: "${rawData}"`;
+                try {
+                    const result = await exponentialBackoff(() => fetch(apiUrlText, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }));
+                    if (result.candidates && result.candidates.length > 0) {
+                        currentAlertText = result.candidates[0].content.parts[0].text;
+                        geminiAlertDiv.innerHTML = currentAlertText.replace(/\n/g, '<br>');
+                        readAloudBtn.disabled = false;
+                    } else {
+                        geminiAlertDiv.textContent = 'Σφάλμα κατά τη δημιουργία της ειδοποίησης.';
+                        currentAlertText = '';
+                    }
+                } catch (error) {
+                    geminiAlertDiv.innerHTML = '<strong>Αδυναμία επικοινωνίας με την υπηρεσία AI.</strong><br><small>Αυτό συμβαίνει συνήθως όταν το αρχείο εκτελείται τοπικά, λόγω περιορισμών ασφαλείας του browser.</small>';
+                    currentAlertText = '';
+                } finally {
+                    generateAlertBtn.disabled = false;
+                    generateAlertLoader.classList.add('hidden');
+                    generateAlertBtnText.textContent = 'Δημιουργία';
+                }
+            });
+            
+            readAloudBtn.addEventListener('click', async () => {
+                if (!currentAlertText) return;
+                ttsError.classList.add('hidden');
+                if (!audioContext) { audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
+                const payload = { contents: [{ parts: [{ text: `Say in a clear and calm voice in Greek: ${currentAlertText}` }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } }, model: "gemini-2.5-flash-preview-tts" };
+                try {
+                    const result = await exponentialBackoff(() => fetch(apiUrlTts, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
+                    const part = result?.candidates?.[0]?.content?.parts?.[0];
+                    const audioData = part?.inlineData?.data;
+                    const mimeType = part?.inlineData?.mimeType;
+                    if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                        const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                        const pcmData = base64ToArrayBuffer(audioData);
+                        const pcm16 = new Int16Array(pcmData);
+                        const wavBlob = pcmToWav(pcm16, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+                        new Audio(audioUrl).play();
+                    } else {
+                        ttsError.textContent = 'Σφάλμα κατά τη δημιουργία του ήχου.';
+                        ttsError.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    ttsError.textContent = 'Αδυναμία επικοινωνίας με την υπηρεσία ήχου.';
+                    ttsError.classList.remove('hidden');
+                }
+            });
+            
+            // MyCity-Fix AI Categorization
+            const categorizeBtn = document.getElementById('categorizeBtn');
+            const fixError = document.getElementById('fix-error');
+            categorizeBtn.addEventListener('click', async () => {
+                const description = document.getElementById('description').value;
+                fixError.classList.add('hidden');
+                if (!description.trim()) {
+                    fixError.textContent = 'Παρακαλώ εισάγετε μια περιγραφή πρώτα.';
+                    fixError.classList.remove('hidden');
+                    return;
+                }
+                const prompt = `Analyze the following user report from Chios, Greece, and categorize it into one of these exact categories: "Λακκούβα στο οδόστρωμα", "Καμένος λαμπτήρας", "Απορρίμματα", "Εγκαταλελειμμένο όχημα", "Άλλο". Respond with only the category name. Report: "${description}"`;
+                try {
+                    const result = await exponentialBackoff(() => fetch(apiUrlText, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }));
+                    if (result.candidates && result.candidates.length > 0) {
+                        const category = result.candidates[0].content.parts[0].text.trim();
+                        const selectElement = document.getElementById('issue-type');
+                        const optionExists = [...selectElement.options].some(opt => opt.value === category);
+                        selectElement.value = optionExists ? category : "Άλλο";
+                    }
+                } catch (error) {
+                    fixError.textContent = 'Αδυναμία αυτόματης κατηγοριοποίησης λόγω σφάλματος επικοινωνίας.';
+                    fixError.classList.remove('hidden');
+                }
+            });
+
+            // Plan View Logic
+            const generatePlanBtn = document.getElementById('generatePlanBtn');
+            const generatePlanBtnText = document.getElementById('generatePlanBtnText');
+            const generatePlanLoader = document.getElementById('generatePlanLoader');
+            const planResultCard = document.getElementById('planResultCard');
+            const planResultDiv = document.getElementById('planResult');
+            const generateChecklistBtn = document.getElementById('generateChecklistBtn');
+            const generateChecklistBtnText = document.getElementById('generateChecklistBtnText');
+            const generateChecklistLoader = document.getElementById('generateChecklistLoader');
+            const checklistResultCard = document.getElementById('checklistResultCard');
+            const checklistResultDiv = document.getElementById('checklistResult');
+            const planError = document.getElementById('plan-error');
+
+            generatePlanBtn.addEventListener('click', async () => {
+                generatePlanBtn.disabled = true;
+                generatePlanLoader.classList.remove('hidden');
+                generatePlanBtnText.textContent = 'Δημιουργία...';
+                planResultCard.classList.add('hidden');
+                planError.classList.add('hidden');
+                const adults = document.getElementById('adults').value;
+                const children = document.getElementById('children').value;
+                const disabilities = document.getElementById('disabilities').value;
+                const areaType = document.getElementById('area-type').value;
+                // FIX: Read the selected disaster type
+                const disasterType = document.getElementById('disaster-type').value;
+                
+                // FIX: Update the prompt to include the selected disaster type
+                const prompt = `Act as a Greek civil protection expert. Create a personalized family emergency plan for a family in Chios, Greece. The plan must focus specifically on the risk of: ${disasterType}.
+                
+                The plan should be clear, concise, and easy to follow. Use markdown for formatting (headings, lists). The family consists of:
+                - Adults: ${adults}
+                - Children: ${children}
+                - Individuals with mobility issues: ${disabilities === 'yes' ? 'Yes' : 'No'}
+                - Area Type: ${areaType}
+
+                Provide step-by-step instructions for:
+                1. **Preparation (Προετοιμασία):** What to do before the ${disasterType} happens.
+                2. **During the Event (Κατά τη Διάρκεια):** What to do when the ${disasterType} is happening.
+                3. **After the Event (Μετά το Συμβάν):** What to do after the ${disasterType} has passed.
+
+                Tailor the advice based on the family composition and area type. The tone should be reassuring but authoritative. Generate the response in Greek.`;
+                try {
+                    const result = await exponentialBackoff(() => fetch(apiUrlText, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }));
+                    if (result.candidates && result.candidates.length > 0) {
+                        const planText = result.candidates[0].content.parts[0].text;
+                        planResultDiv.innerHTML = markdownToHtml(planText);
+                        planResultCard.classList.remove('hidden');
+                        planResultCard.scrollIntoView({ behavior: 'smooth' });
+                    } else { 
+                        planError.textContent = 'Σφάλμα κατά τη δημιουργία του σχεδίου.';
+                        planError.classList.remove('hidden');
+                    }
+                } catch (error) { 
+                    planError.innerHTML = '<strong>Αδυναμία επικοινωνίας με την υπηρεσία AI.</strong><br><small>Αυτό συμβαίνει συνήθως όταν το αρχείο εκτελείται τοπικά, λόγω περιορισμών ασφαλείας του browser.</small>';
+                    planError.classList.remove('hidden');
+                } finally {
+                    generatePlanBtn.disabled = false;
+                    generatePlanLoader.classList.add('hidden');
+                    generatePlanBtnText.textContent = 'Δημιουργία Σχεδίου Δράσης';
+                }
+            });
+
+            generateChecklistBtn.addEventListener('click', async () => {
+                generateChecklistBtn.disabled = true;
+                generateChecklistLoader.classList.remove('hidden');
+                generateChecklistBtnText.textContent = 'Δημιουργία...';
+                checklistResultCard.classList.add('hidden');
+                planError.classList.add('hidden');
+                const adults = document.getElementById('adults').value;
+                const children = document.getElementById('children').value;
+                const prompt = `Create a detailed "go-bag" checklist for a family in Greece. Family composition: ${adults} adults, ${children} children. The output must be a JSON object. The root object should have a key "checklist" which is an array of category objects. Each category object must have two keys: "category" (string, in Greek) and "items" (an array of strings, each string being a checklist item in Greek). Categories should include "Βασικά Έγγραφα", "Πρώτες Βοήθειες", "Τρόφιμα & Νερό", "Προσωπικά Είδη & Ρουχισμός", and "Εργαλεία & Εξοπλισμός". Tailor items based on the family size.`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { checklist: { type: "ARRAY", items: { type: "OBJECT", properties: { category: { type: "STRING" }, items: { type: "ARRAY", items: { type: "STRING" } } } } } } } }
+                };
+                try {
+                    const result = await exponentialBackoff(() => fetch(apiUrlText, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
+                    if (result.candidates && result.candidates.length > 0) {
+                        const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                        renderChecklist(jsonResponse.checklist);
+                        checklistResultCard.classList.remove('hidden');
+                        checklistResultCard.scrollIntoView({ behavior: 'smooth' });
+                    } else { 
+                        planError.textContent = 'Σφάλμα κατά τη δημιουργία της λίστας.';
+                        planError.classList.remove('hidden');
+                    }
+                } catch (error) { 
+                    planError.innerHTML = '<strong>Αδυναμία επικοινωνίας με την υπηρεσία AI για τη λίστα.</strong><br><small>Αυτό συμβαίνει συνήθως όταν το αρχείο εκτελείται τοπικά, λόγω περιορισμών ασφαλείας του browser.</small>';
+                    planError.classList.remove('hidden');
+                } finally {
+                    generateChecklistBtn.disabled = false;
+                    generateChecklistLoader.classList.add('hidden');
+                    generateChecklistBtnText.textContent = 'Δημιουργία Λίστας Ελέγχου';
+                }
+            });
+            
+            function renderChecklist(checklistData) {
+                checklistResultDiv.innerHTML = '';
+                checklistData.forEach(category => {
+                    const categoryDiv = document.createElement('div');
+                    const categoryTitle = document.createElement('h4');
+                    categoryTitle.className = 'text-lg font-bold text-[#006494] mt-4 border-b pb-1';
+                    categoryTitle.textContent = category.category;
+                    categoryDiv.appendChild(categoryTitle);
+                    const itemList = document.createElement('div');
+                    itemList.className = 'mt-2 space-y-2';
+                    category.items.forEach(item => {
+                        const itemLabel = document.createElement('label');
+                        itemLabel.className = 'flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer';
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                        const itemText = document.createElement('span');
+                        itemText.className = 'ml-3 text-gray-700';
+                        itemText.textContent = item;
+                        itemLabel.appendChild(checkbox);
+                        itemLabel.appendChild(itemText);
+                        itemList.appendChild(itemLabel);
+                    });
+                    categoryDiv.appendChild(itemList);
+                    checklistResultDiv.appendChild(categoryDiv);
+                });
+            }
+            
+            // Utility Functions
+            function base64ToArrayBuffer(base64) { const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes.buffer; }
+            function pcmToWav(pcm, sampleRate) { const numChannels = 1, bitsPerSample = 16, blockAlign = numChannels * bitsPerSample / 8; const byteRate = sampleRate * blockAlign, dataSize = pcm.length * pcm.BYTES_PER_ELEMENT; const buffer = new ArrayBuffer(44 + dataSize); const view = new DataView(buffer); function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } } writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true); view.setUint16(34, bitsPerSample, true); writeString(view, 36, 'data'); view.setUint32(40, dataSize, true); for (let i = 0; i < pcm.length; i++) { view.setInt16(44 + i * 2, pcm[i], true); } return new Blob([view], { type: 'audio/wav' }); }
+            function markdownToHtml(text) { let html = text.replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h2>$1</h2>').replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>').replace(/\*(.*)\*/g, '<em>$1</em>'); const lines = html.split('\n'); let inList = false; let listType = ''; let listHtml = ''; for(let line of lines) { const isUl = line.trim().startsWith('* '); const isOl = line.trim().match(/^\d+\. /); if (isUl || isOl) { const currentType = isUl ? 'ul' : 'ol'; if (!inList || listType !== currentType) { if (inList) { listHtml += `</${listType}>`; } inList = true; listType = currentType; listHtml += `<${listType}>`; } listHtml += `<li>${line.trim().substring(line.indexOf(' ') + 1)}</li>`; } else { if (inList) { inList = false; listHtml += `</${listType}>`; } listHtml += `<p>${line}</p>`; } } if (inList) { listHtml += `</${listType}>`; } return listHtml.replace(/<p><\/p>/g, ''); }
+        });
+    </script>
+</body>
+</html>
